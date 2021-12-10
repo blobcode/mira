@@ -1,10 +1,10 @@
 use std::io::{ErrorKind, Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::str::FromStr;
 use std::sync::mpsc;
 use std::thread;
 
-use crate::client;
-
+// server addr
 const LOCAL: &str = "127.0.0.1:6000";
 const MSG_SIZE: usize = 1024;
 
@@ -29,6 +29,16 @@ pub fn main() {
         if let Ok((mut socket, addr)) = server.accept() {
             println!("Client {} connected", addr);
 
+            // create message struct
+            let connectmessage = format!("{} connected", addr);
+
+            // send message to threads
+            tx.send(Message {
+                addr,
+                msg: connectmessage,
+            })
+            .expect("failed to send msg to threads");
+
             let tx = tx.clone();
             clients.push(socket.try_clone().expect("failed to clone client"));
 
@@ -41,17 +51,27 @@ pub fn main() {
                         let msg = buff.into_iter().take_while(|&x| x != 0).collect::<Vec<_>>();
                         let msg = String::from_utf8(msg).expect("Invalid utf8 message");
 
-                        println!("{}: {:?}", addr, msg);
+                        println!("[Timestamp] {} > {}", addr, msg);
 
+                        let msg = format!("{} > {}", addr, msg);
                         // create message struct
-                        let msgt = Message { addr, msg };
+                        let msgts = Message { addr, msg };
 
                         // send message to threads
-                        tx.send(msgt).expect("failed to send msg to threads");
+                        tx.send(msgts).expect("failed to send msg to threads");
                     }
                     Err(ref err) if err.kind() == ErrorKind::WouldBlock => (),
                     Err(_) => {
                         println!("closing connection with: {}", addr);
+
+                        // create message struct
+                        let leavemessage = format!("{} disconnected", addr);
+
+                        // send message to threads
+                        tx.send(Message {
+                            addr,
+                            msg: leavemessage,
+                        });
                         break;
                     }
                 }
@@ -67,7 +87,7 @@ pub fn main() {
                 buff.resize(MSG_SIZE, 0);
 
                 if client.peer_addr().unwrap() != msg.addr {
-                    client.write_all(&buff).map(|_| client).unwrap();
+                    client.write_all(&buff).map(|_| client);
                 };
             }
         }

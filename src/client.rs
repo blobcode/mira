@@ -21,7 +21,7 @@ pub fn main() {
             Ok(_) => {
                 let msg = buff.into_iter().take_while(|&x| x != 0).collect::<Vec<_>>();
                 let msg = String::from_utf8(msg).expect("Invalid utf8 message");
-                println!("recv > {}", msg);
+                println!("{}", msg);
             }
             Err(ref err) if err.kind() == ErrorKind::WouldBlock => (),
             Err(_) => {
@@ -35,7 +35,6 @@ pub fn main() {
                 let mut buff = msg.clone().into_bytes();
                 buff.resize(MSG_SIZE, 0);
                 client.write_all(&buff).expect("writing to socket failed");
-                //println!("me > {}", msg);
             }
             Err(TryRecvError::Empty) => (),
             Err(TryRecvError::Disconnected) => break,
@@ -55,5 +54,5 @@ pub fn main() {
             break;
         }
     }
-    println!("bye bye!");
+    println!("bye :(");
 }

@@ -20,8 +20,8 @@ fn main() {
     };
 
     match args.input.as_ref() {
-        "client" => client::main(),
         "server" => server::main(),
+        "client" => client::main(),
         _ => print!("{}", HELP),
     }
 }
